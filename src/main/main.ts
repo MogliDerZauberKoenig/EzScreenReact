@@ -10,20 +10,20 @@
  */
 import path from 'path';
 import fs from 'fs';
-import { app, BrowserWindow, shell, ipcMain, screen, globalShortcut, dialog } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, screen, globalShortcut, dialog, Notification } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import screenshot from 'screenshot-desktop';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
-class AppUpdater {
+/* class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
     autoUpdater.checkForUpdatesAndNotify();
   }
-}
+} */
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -112,16 +112,32 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  
   console.log('feed');
   console.log(autoUpdater.currentVersion.version);
 
-  new AppUpdater();
+  // new AppUpdater();
+  autoUpdater.checkForUpdates();
 };
 
 /**
  * Add event listeners...
  */
+
+autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
+  new Notification({
+    title: 'EzScreen Update',
+    body: 'Neues Update wird heruntergeladen',
+  }).show();
+});
+
+autoUpdater.on('update-downloaded', (_event, releaseNotes, releaseName) => {
+  new Notification({
+    title: 'EzScreen Update',
+    body: 'Neues Update wird installiert',
+  }).show();
+
+  autoUpdater.quitAndInstall();
+});
 
 function createCompleteMonitorScreenshot() {
   let display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
