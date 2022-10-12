@@ -55,7 +55,7 @@ class App extends Component {
           <Route path="/" element={<Hello />} />
           <Route path="/Settings" element={<Settings />} />
         </Routes>
-        <p>Version: 0.1.4</p>
+        <p>Version: 0.1.5</p>
       </Router>
     );
   }
