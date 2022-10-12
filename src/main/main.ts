@@ -17,6 +17,14 @@ import screenshot from 'screenshot-desktop';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
+class AppUpdater {
+  constructor() {
+    log.transports.file.level = 'info';
+    autoUpdater.logger = log;
+    autoUpdater.checkForUpdatesAndNotify();
+  }
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
@@ -108,36 +116,12 @@ const createWindow = async () => {
   console.log('feed');
   console.log(autoUpdater.currentVersion.version);
 
-  autoUpdater.checkForUpdates();
+  new AppUpdater();
 };
 
 /**
  * Add event listeners...
  */
-
-autoUpdater.on("update-available", (_event, releaseNotes, releaseName) => {
-  const dialogOpts = {
-    type: 'info',
-    buttons: ['Ok'],
-    title: 'Application Update',
-    message: process.platform === 'win32' ? releaseNotes : releaseName,
-    detail: 'A new version is being downloaded.',
-  };
-  dialog.showMessageBox(dialogOpts, (response) => {});
-});
-
-autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
-  const dialogOpts = {
-    type: 'info',
-    buttons: ['Restart', 'Later'],
-    title: 'Application Update',
-    message: process.platform === 'win32' ? releaseNotes : releaseName,
-    detail: 'A new version has been downloaded. Restart the application to apply the updates.'
-  };
-  dialog.showMessageBox(dialogOpts).then((returnValue) => {
-    if (returnValue.response === 0) autoUpdater.quitAndInstall()
-  });
-});
 
 function createCompleteMonitorScreenshot() {
   let display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
