@@ -34,12 +34,22 @@ class App extends Component {
     console.log(this.props);
 
     this.navigation = this.props.navigation;
+
+    this.state = {
+      version: "0"
+    };
+
+    window.electron.ipcRenderer.sendMessage('version_current');
   }
 
   componentDidMount(): void {
     window.electron.ipcRenderer.on('navigate', (arg) => {
       console.log('navigate');
       this.navigation.navigate(arg);
+    });
+
+    window.electron.ipcRenderer.on('version_current', (arg) => {
+      this.setState({ version: arg });
     });
   }
 
@@ -55,7 +65,7 @@ class App extends Component {
           <Route path="/" element={<Hello />} />
           <Route path="/Settings" element={<Settings />} />
         </Routes>
-        <p>Version: 0.1.5</p>
+        <p>Version: {this.state.version}</p>
       </Router>
     );
   }

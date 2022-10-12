@@ -105,6 +105,9 @@ const createWindow = async () => {
   });
 
   
+  console.log('feed');
+  console.log(autoUpdater.currentVersion.version);
+
   autoUpdater.checkForUpdates();
 };
 
@@ -136,7 +139,7 @@ autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
   });
 });
 
- function createCompleteMonitorScreenshot() {
+function createCompleteMonitorScreenshot() {
   let display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   let displayId = 0;
   let displays = screen.getAllDisplays();
@@ -170,6 +173,10 @@ autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
 
 ipcMain.on('screenshot_create', async (event, arg) => {
   createCompleteMonitorScreenshot();
+});
+
+ipcMain.on('version_current', (event, arg) => {
+  event.reply('version_current', autoUpdater.currentVersion.version);
 });
 
 app.on('window-all-closed', () => {
