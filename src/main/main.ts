@@ -104,9 +104,8 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  if(!isDebug) {
-    autoUpdater.checkForUpdates();
-  }
+  
+  autoUpdater.checkForUpdates();
 };
 
 /**
