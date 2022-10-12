@@ -1,5 +1,7 @@
 {
+  "name": "EzScreen",
   "description": "EzScreen",
+  "version": "0.0.1",
   "keywords": [
     "electron",
     "boilerplate",
@@ -17,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "https://github.com/MogliDerZauberKoenig/EzScreenReact"
   },
   "license": "MIT",
   "author": {
@@ -255,7 +257,7 @@
     "publish": {
       "provider": "github",
       "owner": "MogliDerZauberKoenig",
-      "repo": "EzScreen"
+      "repo": "EzScreenReact"
     }
   },
   "collective": {
