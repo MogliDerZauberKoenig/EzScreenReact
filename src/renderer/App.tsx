@@ -10,6 +10,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Settings from 'pages/Settings';
 import Navbar from 'components/Navbar';
 import icon from '../../assets/icon.svg';
+import audioUploaded from '../../assets/audio/uploaded.wav';
 // import './App.css';
 
 const Hello = (props) => {
@@ -44,6 +45,12 @@ class App extends Component {
   }
 
   componentDidMount(): void {
+    window.electron.ipcRenderer.on('screenshot_uploaded', (arg) => {
+      console.log('screenshot uploaded');
+      const audio = new Audio(audioUploaded);
+      audio.play();
+    });
+
     window.electron.ipcRenderer.on('version_current', (arg) => {
       this.setState({ version: arg });
     });

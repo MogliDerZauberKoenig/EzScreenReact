@@ -11,7 +11,7 @@
  */
 import path from 'path';
 import fs from 'fs';
-import { app, BrowserWindow, shell, ipcMain, screen, globalShortcut, dialog, Notification } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, screen, globalShortcut, dialog, Notification, clipboard } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import screenshot from 'screenshot-desktop';
@@ -248,6 +248,10 @@ function uploadImageFromBuffer(img) {
 
   axios.post(urls.upload, formData, { headers: formData.getHeaders() }).then((res) => {
     console.log(res.data);
+    if(res.data.status) {
+      clipboard.writeText(res.data.url);
+      mainWindow.webContents.send('screenshot_uploaded');
+    }
   }).catch((err) => {
     console.log(err);
   });
