@@ -181,14 +181,18 @@ function checkLoginStatus() {
   formData.append('username', config.account.username);
   formData.append('password', config.account.password);
 
+  log.debug('Checking Login Status');
+
   // eslint-disable-next-line prettier/prettier
   axios.post(urls.login, formData, { headers: formData.getHeaders() }).then((res) => {
     console.log(res.data);
+    log.debug(res.data);
     if(!res.data.status) {
       createGuest();
     }
   }).catch((err) => {
     console.log(err);
+    log.error(err);
   });
 }
 
@@ -207,6 +211,8 @@ function createGuest() {
 }
 
 function createCompleteMonitorScreenshot() {
+  log.debug('creating screenshot');
+
   let display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   let displayId = 0;
   let displays = screen.getAllDisplays();
@@ -216,17 +222,24 @@ function createCompleteMonitorScreenshot() {
     }
   }
 
+
+
   screenshot
     .listDisplays()
     .then((displays) => {
       console.log(displays);
+      log.debug(displays);
       screenshot({ screen: displays[displayId].id, format: 'png' })
         .then((img) => {
+          log.debug('screenshot created');
           fs.writeFile('test.png', img, function (err) {
             if (err) {
               mainWindow.webContents.send('log', err);
+              log.error(err);
               throw err;
             }
+
+            log.debug('screenshot saved');
 
             uploadImageFromBuffer(img);
           });
@@ -237,6 +250,7 @@ function createCompleteMonitorScreenshot() {
     })
     .catch((err) => {
       console.log(err);
+      log.error(err);
     });
 }
 

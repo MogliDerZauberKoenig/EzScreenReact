@@ -120,8 +120,7 @@
     "react": "^18.2.0",
     "react-bootstrap": "^2.5.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.3.0",
-    "screenshot-desktop": "^1.12.7"
+    "react-router-dom": "^6.3.0"
   },
   "devDependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",
@@ -195,7 +194,10 @@
     "productName": "EzScreen",
     "appId": "com.mogli1337.ezscreen",
     "asar": true,
-    "asarUnpack": "**\\*.{node,dll}",
+    "asarUnpack": [
+      "**\\*.{node,dll}",
+      "node_modules/screenshot-desktop/lib/win32"
+    ],
     "files": [
       "dist",
       "node_modules",
@@ -234,7 +236,10 @@
       "target": [
         "nsis"
       ],
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "extraResources": [
+        "node_modules/screenshot-desktop/"
+      ]
     },
     "nsis": {
       "oneClick": true,
