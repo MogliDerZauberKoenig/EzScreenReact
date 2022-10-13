@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
 /**
@@ -16,14 +17,24 @@ import log from 'electron-log';
 import screenshot from 'screenshot-desktop';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import axios from 'axios';
+import FormData from 'form-data';
 
-/* class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-} */
+const urls = {
+  upload: 'http://37.228.132.183/ezscreen/upload.php',
+  update: 'http://37.228.132.183/ezscreen/update.php',
+  login: 'http://37.228.132.183/ezscreen/login.php',
+  addUploadTime: 'http://37.228.132.183/ezscreen/addUploadTime.php',
+  delete: 'http://37.228.132.183/ezscreen/delete.php',
+  createGuest: 'http://37.228.132.183/ezscreen/createGuest.php',
+};
+
+let config = {
+  account: {
+    username: '',
+    password: '',
+  },
+};
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -139,6 +150,62 @@ autoUpdater.on('update-downloaded', (_event, releaseNotes, releaseName) => {
   autoUpdater.quitAndInstall();
 });
 
+function checkConfig() {
+  if (!checkFileExistsSync(`${app.getPath("userData")}/config.json`)) {
+    saveConfig();
+  }
+
+  loadConfig();
+}
+
+function loadConfig() {
+  config = JSON.parse(fs.readFileSync(`${app.getPath("userData")}/config.json`));
+}
+
+function saveConfig() {
+  fs.writeFileSync(`${app.getPath("userData")}/config.json`, JSON.stringify(config, null, 4));
+}
+
+function checkFileExistsSync(filepath) {
+  let flag = true;
+  try {
+    fs.accessSync(filepath, fs.constants.F_OK);
+  } catch (e) {
+    flag = false;
+  }
+  return flag;
+}
+
+function checkLoginStatus() {
+  const formData = new FormData();
+  formData.append('username', config.account.username);
+  formData.append('password', config.account.password);
+
+  // eslint-disable-next-line prettier/prettier
+  axios.post(urls.login, formData, { headers: formData.getHeaders() }).then((res) => {
+    console.log(res.data);
+    if(!res.data.status) {
+      createGuest();
+    }
+  }).catch((err) => {
+    console.log(err);
+  });
+}
+
+function createGuest() {
+  axios.post(urls.createGuest, null).then((res) => {
+    if (res.data.status) {
+      config.account.username = res.data.username;
+      config.account.password = res.data.password;
+      saveConfig();
+
+      checkLoginStatus();
+    }
+  }).catch((err) => {
+
+  });
+}
+
 function createCompleteMonitorScreenshot() {
   let display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   let displayId = 0;
@@ -160,6 +227,8 @@ function createCompleteMonitorScreenshot() {
               mainWindow.webContents.send('log', err);
               throw err;
             }
+
+            uploadImageFromBuffer(img);
           });
         })
         .catch((err) => {
@@ -171,12 +240,29 @@ function createCompleteMonitorScreenshot() {
     });
 }
 
+function uploadImageFromBuffer(img) {
+  const formData = new FormData();
+  formData.append('file', img, 'upload.png');
+  formData.append('username', config.account.username);
+  formData.append('password', config.account.password);
+
+  axios.post(urls.upload, formData, { headers: formData.getHeaders() }).then((res) => {
+    console.log(res.data);
+  }).catch((err) => {
+    console.log(err);
+  });
+}
+
 ipcMain.on('screenshot_create', async (event, arg) => {
   createCompleteMonitorScreenshot();
 });
 
 ipcMain.on('version_current', (event, arg) => {
   event.reply('version_current', autoUpdater.currentVersion.version);
+});
+
+ipcMain.on('config_username', (event, arg) => {
+  event.reply('config_username', config.account.username);
 });
 
 app.on('window-all-closed', () => {
@@ -191,9 +277,14 @@ app
   .whenReady()
   .then(() => {
     // register global shortcuts
-    const completeMonitorScreenshot = globalShortcut.register('CommandOrControl+X', () => {
+    const completeMonitorScreenshot = globalShortcut.register('CommandOrControl+Shift+X', () => {
         createCompleteMonitorScreenshot();
     });
+
+    checkConfig();
+    checkLoginStatus();
+
+    console.log(app.getPath('userData'));
 
     createWindow();
     app.on('activate', () => {

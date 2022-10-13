@@ -1,28 +1,31 @@
 import { MemoryRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import React, { Component } from 'react';
 
-import Settings from 'pages/Settings';
-import icon from '../../assets/icon.svg';
-import './App.css';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Button from 'react-bootstrap/Button';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-const Hello = () => {
+import Settings from 'pages/Settings';
+import Navbar from 'components/Navbar';
+import icon from '../../assets/icon.svg';
+// import './App.css';
+
+const Hello = (props) => {
   const navigate = useNavigate();
 
   return (
-    <div>
-      <div className="Hello">
-        <img width="200" alt="icon" src={icon} />
-      </div>
-      <h1>Willkommen bei EzScreen</h1>
-      <div className="Hello">
-        <button type="button" onClick={() => window.electron.ipcRenderer.sendMessage('screenshot_create')}>
-          Foto
-        </button>
-        <button type="button" onClick={() => navigate("/Settings")}>
-          Einstellungen
-        </button>
-      </div>
-    </div>
+    <Container fluid>
+      <Row>
+        <Col sm={3}>
+          <Navbar />
+        </Col>
+        <Col>
+          <p>Willkommen <a href="#">{props.username}</a>.</p>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
@@ -31,25 +34,22 @@ class App extends Component {
     super(props);
     window.home = this;
 
-    console.log(this.props);
-
-    this.navigation = this.props.navigation;
-
     this.state = {
-      version: "0"
+      username: '',
+      version: '0',
     };
 
     window.electron.ipcRenderer.sendMessage('version_current');
+    window.electron.ipcRenderer.sendMessage('config_username');
   }
 
   componentDidMount(): void {
-    window.electron.ipcRenderer.on('navigate', (arg) => {
-      console.log('navigate');
-      this.navigation.navigate(arg);
-    });
-
     window.electron.ipcRenderer.on('version_current', (arg) => {
       this.setState({ version: arg });
+    });
+
+    window.electron.ipcRenderer.on('config_username', (arg) => {
+      this.setState({ username: arg });
     });
   }
 
@@ -62,7 +62,7 @@ class App extends Component {
     return (
       <Router>
         <Routes>
-          <Route path="/" element={<Hello />} />
+          <Route path="/" element={<Hello username={this.state.username} />} />
           <Route path="/Settings" element={<Settings />} />
         </Routes>
         <p>Version: {this.state.version}</p>

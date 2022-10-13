@@ -1,7 +1,11 @@
 /* eslint-disable prettier/prettier */
 import React, { Component } from 'react';
-import icon from '../../assets/icon.svg';
-import '../renderer/App.css';
+
+import Navbar from 'components/Navbar';
+
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 
 class Settings extends Component {
   constructor(props) {
@@ -11,7 +15,16 @@ class Settings extends Component {
 
   render() {
     return (
-      <div></div>
+      <Container fluid>
+      <Row>
+        <Col sm={3}>
+          <Navbar />
+        </Col>
+        <Col>
+          <p>Einstellungen</p>
+        </Col>
+      </Row>
+    </Container>
     );
   }
 } 

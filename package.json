@@ -111,10 +111,14 @@
     }
   },
   "dependencies": {
+    "axios": "^1.1.2",
+    "bootstrap": "^5.2.2",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^5.2.3",
+    "form-data": "^4.0.0",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.5.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.3.0",
     "screenshot-desktop": "^1.12.7"
