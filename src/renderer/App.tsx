@@ -35,6 +35,8 @@ class App extends Component {
     super(props);
     window.home = this;
 
+    console.log(props);
+
     this.state = {
       username: '',
       version: '0',

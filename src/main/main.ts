@@ -19,6 +19,7 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import axios from 'axios';
 import FormData from 'form-data';
+import Jimp from 'jimp';
 
 const urls = {
   upload: 'http://37.228.132.183/ezscreen/upload.php',
@@ -37,6 +38,9 @@ let config = {
 };
 
 let mainWindow: BrowserWindow | null = null;
+let cropWindow: BrowserWindow | null = null;
+
+const port = process.env.PORT || 1212;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -88,7 +92,7 @@ const createWindow = async () => {
     height: 700,
     icon: getAssetPath('icon.png'),
     webPreferences: {
-      // devTools: false,
+      devTools: false,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
@@ -97,7 +101,12 @@ const createWindow = async () => {
 
   mainWindow.removeMenu();
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow.loadURL(resolveHtmlPath('index.html#/Main'));
+  /*mainWindow.loadURL(
+    isDebug
+      ? `http://localhost:${port}?Main`
+      : `file://${path.join(__dirname, '../build/index.html?Main')}`
+  );*/
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -254,6 +263,119 @@ function createCompleteMonitorScreenshot() {
     });
 }
 
+const openArea = async () => {
+  if (isDebug) {
+    await installExtensions();
+  }
+
+  const RESOURCES_PATH = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets')
+    : path.join(__dirname, '../../assets');
+
+  const getAssetPath = (...paths: string[]): string => {
+    return path.join(RESOURCES_PATH, ...paths);
+  };
+
+  console.log('creating crop window');
+  cropWindow = new BrowserWindow({
+    show: true,
+    width: 800,
+    height: 700,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    minimizable: false,
+    maximizable: false,
+    resizable: false,
+    icon: getAssetPath('icon.png'),
+    opacity: 0.5,
+    webPreferences: {
+      devTools: false,
+      nodeIntegration: true,
+      preload: app.isPackaged
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, '../../.erb/dll/preload.js'),
+    },
+  });
+
+  cropWindow.on('closed', () => {
+    updatingArea = false;
+  });
+
+  cropWindow.removeMenu();
+  cropWindow.loadURL(resolveHtmlPath('index.html#/Area'));
+
+  cropWindow.show();
+
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+
+  cropWindow.setBounds(display.bounds);
+
+  updateArea();
+
+  console.log(display);
+};
+
+let updatingArea = false;
+let currentDisplayId = 0;
+const updateArea = async () => {
+  if (updatingArea) return;
+  updatingArea = true;
+
+  while (updatingArea) {
+    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const displays = screen.getAllDisplays();
+    for (let i = 0; i < displays.length; i++) {
+      if (displays[i].id === display.id) {
+        if (i !== currentDisplayId) {
+          currentDisplayId = i;
+          console.log('display changed');
+          cropWindow?.setBounds(display.bounds);
+        }
+
+        break;
+      }
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    await wait(500);
+  }
+};
+
+const wait = (time: number | undefined) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true);
+    }, time);
+  });
+};
+
+const vectorToBounds = (
+  vec1: { x: number; y: number },
+  vec2: { x: number; y: number }
+) => {
+  // eslint-disable-next-line prefer-const
+  let bounds = {
+    x: vec1.x,
+    y: vec1.y,
+    width: vec2.x - vec1.x,
+    height: vec2.y - vec1.y,
+  };
+
+  // create normal bounds
+  if (bounds.width < 0) {
+    bounds.width *= -1;
+    bounds.x -= bounds.width;
+  }
+
+  if (bounds.height < 0) {
+    bounds.height *= -1;
+    bounds.y -= bounds.height;
+  }
+
+  return bounds;
+};
+
 function uploadImageFromBuffer(img) {
   const formData = new FormData();
   formData.append('file', img, 'upload.png');
@@ -283,10 +405,70 @@ ipcMain.on('config_username', (event, arg) => {
   event.reply('config_username', config.account.username);
 });
 
+ipcMain.on('crop_create', (event, arg) => {
+  updatingArea = false;
+  if (cropWindow !== null) {
+    console.log('quit crop window');
+    cropWindow?.close();
+  }
+
+  let display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  let displayId = 0;
+  let displays = screen.getAllDisplays();
+  for (let i = 0; i < displays.length; i++) {
+    if (displays[i].id === display.id) {
+      displayId = i;
+    }
+  }
+
+  console.log(arg);
+
+  // eslint-disable-next-line prefer-const
+  let bounds = vectorToBounds(
+    { x: arg.areaStart.current.x, y: arg.areaStart.current.y },
+    { x: arg.areaEnd.current.x, y: arg.areaEnd.current.y }
+  );
+
+  screenshot
+    .listDisplays()
+    .then((displays) => {
+      screenshot({ screen: displays[displayId].id, format: 'png' })
+        .then((img) => {
+          Jimp.read(img).then(image => {
+            image.crop(bounds.x, bounds.y, bounds.width, bounds.height);
+
+            image.write('test.png', function() { });
+            image.getBuffer(Jimp.MIME_PNG, (err, buffer) => {
+              uploadImageFromBuffer(buffer);
+            });
+          }).catch((err) => {
+            console.log(err);
+          })
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+      log.error(err);
+    });
+});
+
+ipcMain.on('crop_quit', (event, arg) => {
+
+  updatingArea = false;
+  if (cropWindow !== null) {
+    console.log('quit crop window');
+    cropWindow?.close();
+  }
+});
+
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
   if (process.platform !== 'darwin') {
+    updatingArea = false;
     app.quit();
   }
 });
@@ -299,6 +481,10 @@ app
         createCompleteMonitorScreenshot();
     });
 
+    const areaScreenshot = globalShortcut.register('CommandOrControl+Shift+Y', () => {
+      openArea();
+    });
+
     checkConfig();
     checkLoginStatus();
 
@@ -309,6 +495,10 @@ app
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
+    });
+
+    app.on('before-quit', () => {
+      updatingArea = false;
     });
   })
   .catch(console.log);

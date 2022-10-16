@@ -25,7 +25,9 @@ const configuration: webpack.Configuration = {
 
   target: ['web', 'electron-renderer'],
 
-  entry: [path.join(webpackPaths.srcRendererPath, 'index.tsx')],
+  entry: {
+    index: [path.join(webpackPaths.srcRendererPath, 'index.tsx')],
+  },
 
   output: {
     path: webpackPaths.distRendererPath,
